@@ -4,6 +4,6 @@ deployment:
     limits:
       memory: "256M"
     requests:
-      memory: "129M"
+      memory: "128M"
   ports:
     - 3000
