@@ -2,7 +2,7 @@
 # BUILD FOR LOCAL DEVELOPMENT
 ###################
 
-FROM whanos-js As development
+FROM europe-west1-docker.pkg.dev/turnkey-science-406413/whanos/whanos-javascript:latest As development
 
 WORKDIR /usr/src/app
 
