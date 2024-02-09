@@ -1,0 +1,309 @@
+<!-- Copyright (C) DATADVANCE, 2010-2020 -->
+<!DOCTYPE html>
+<html lang="eng">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="help.css" />
+  <script src="help.js"></script>
+  <title></title>
+</head>
+
+<body>
+
+<div id="ToC">
+  <!-- Automatically filled by JS -->
+</div>
+
+<div id="help_content">
+
+
+<h1>I. Introduction</h1>
+
+<p>Abaqus VAS Block allows to generate Abaqus Virtual Anchor Spacing models automatically using sets of predefined inputs and options filled by the user.</br>
+This block provides the technical means to generates a set of .inp and .tab files that can be run in Abaqus.</br>
+If the user is not satisfied with the proposed model and he wants to modify it, he can generate a model, take it back from the run folder, make
+his modifications and then load it using the Model Loader block.</p>
+
+<h1>II. Model Configuration</h1>
+<h3>1. Model Configuration</h3>
+
+<p>The current version of the Block allows to generate different sets of Models depending on chosen options in the GUI (panel on the left). The first step is to choose the main configuration of the VAS Model:</p>
+  <ul>
+  <li><strong>PipeType</strong>: Single Pipe;</li>
+  <li><strong>Liner</strong>: Model with or without liner;</li>
+  <li><strong>Initiation method</strong>: 7 methodologies are proposed to initiate the buckle: U-RCM, U-RCM + winch, Rogue buckle (using a lateral imperfection), by using a sleeper, 
+  W-RCM, W-RCM + winch and by using a subsea winch;</li>
+  <li><strong>Friction</strong>: Aniostropic, isotropic  or subroutine OneFric v3.12</li>
+  <li><strong>Additional steps</strong>: Step added after installation steps. The user has the possibility to change the loads applied on each step;</li>
+  <li><strong>Steps to run</strong>: Range of steps to be run. If the first step is greater than 1, model files are automatically adjusted to make a restart.</li>
+</ul>
+
+<h3>2. Inputs</h3>
+<p>Defines pipeline properties and other general inputs. The set of inputs required is adapted dynamically depending on the chosen configuration.</p>
+
+<h3>3. Conditions</h3>
+<p>Defines loads applied on each step, such as the <strong>contents density</strong>, the <strong>internal pressure</strong> and the <strong>pipe temperature</strong>.</br>
+The loads defined for the installation steps are automatically applied to the relevant steps, depending on the methodology chosen. The user can't modify the installation steps.</p>
+
+<h3>4. Results frequency</h3>
+<p>Defines the frequency of the results requested by the user for each step. The user can specify "FREQUENCY" (results are computed by Abaqus every n frames) or 
+"NUMBER INTERVAL" (equally spaced results in a step)</p>
+
+<h3>5. Outputs</h3>
+<p>
+  The list shown reflects all the variables requested to be written in the ODB file. The user can choose in this panel the variable that should be extracted from the ODB file in the Runner block to
+  then be usable by the post-process blocks. The user has the possibility to choose what he wants to extract by setting "<samp>Export = YES</samp>".
+  He can also choose to extract the data, for each step, at all frames or just the last one. In any selected option, the data is retrieved only if it exists for every step.
+  The block output a variable gathering all the user choices to be sent to the Runner block.
+</p>
+
+<h3>6. Stabilization</h3>
+
+<p>The steps tab allows to define stabilization variables for all the steps, including installation steps.
+The user has the possibility to update the time incrementation parameters (i.e. the <strong>initial increment</strong>, the <strong>minimum increment</strong> 
+and the <strong>maximum increment</strong>) as well as the <strong>type of stabilization</strong> and its <strong>value</strong>.
+The user always specifies the value of the <samp>STABILIZE</samp> option associated to the STATIC command.</br>
+Three options are possible for the stabilization:</p>
+
+  <ul>
+      <li>"No": no stabilization is used. STABILIZE option is not specified;</li>
+      <li>"Yes": STABILIZE option is included with a value specified by the user;</li>
+    <li>"Auto": automatic stabilization is included with a value of 5% (ALLSDTOL = 0.05). The STABILIZE command is included with an value specified by the user.</li>
+  </ul>
+<p>Those parameters are provided as input of the block and so can be tuned by another process (e.g. by an optimizer on convergence).</p>
+
+
+
+<h1>III. Generated outputs</h1>
+<h3>1. Model Files</h3>
+
+<p>The Block creates the following files, whose prefix is the model name, constituting the Abaqus model:</p>
+  <ul>
+	<li><strong>..._JOB.inp</strong>: Main file that runs the calculation, calling all other files;</li>
+    <li><strong>..._01_Parameters.inp</strong>: Contains input parameters as defined by the user;</li>
+    <li><strong>..._02_Calculations.inp</strong>: Intermediate calculations necessary to build the model;</li>
+    <li><strong>..._03_Material_Curve.inp</strong>: Main material commands;</li>
+	<li><strong>..._04_Elastic Steel.tab</strong>: Elastic curve of the pipe;</li>
+	<li><strong>..._04_Expansion_Steel.tab</strong>: Thermal expansion curve of the pipe;</li>
+	<li><strong>..._04_Plastic_Steel.tab</strong>: Plastic definition of the pipe;</li>
+	<li><strong>..._04_Elastic Liner.tab</strong>: Elastic curve of the liner if any;</li>
+	<li><strong>..._04_Expansion_Liner.tab</strong>: Thermal expansion curve of the liner if any;</li>
+	<li><strong>..._04_Plastic_Liner.tab</strong>: Plastic definition of the liner if any;</li>
+    <li><strong>..._05_Meshing.inp</strong>: Define the pipeline meshing (nodes, elements,...);</li>
+    <li><strong>..._06_Seabed.inp</strong>: Models the seabed and the contact with the pipeline;</li>
+    <li><strong>..._06_Sleeper.inp</strong>: (Optional) defines the sleeper if requested;</li>
+    <li><strong>..._07_Steps.inp</strong>: Defines the steps of the model;</li>
+    <li><strong>..._08_Req_Outputs.inp</strong>: Outputs requested in the steps;</li>
+  </ul>
+
+<p>The block outputs a list that contains the absolute path of each model file. This list can be provided to the Abaqus runner Block.
+It also separately outputs the name of the main file, the one that should be run in Abaqus.</p>
+
+<h3>2. Pressure File</h3>
+
+<p> Other than Model files, the block generate a compressed json file containing the pressure information (PRESSE and PRESSI) of the model for each step. This file can be transformed by
+the Runner block to then be provided to a post-process block. The block outputs an absolute path to this pressure data file.</p>
+
+<h3>3. Requested outputs</h3>
+
+<p> The last output of the block is a structure that reflect all the choices of outputs desired by the user. This list is exclusively used by the Runner block to extract all
+the requested outputs from the ODB file a provide them under compressed JSON format that can then be used by a post-process block.</p>
+
+
+<h1>IV. Model construction</h1>
+
+<h3>1. Meshing definition</h3>
+<p>Meshing is defined symetrically on both sides of the buckle node. Each Model is defined into main part (left and right), each containing 
+an equal number of sections. Sections are defined according to meshing size and length defined by the user. The length of the last section 
+is calculated with the remaining pipe length.</br>
+Below is a schema showing the sections arrangement:</p>
+
+<img src="img/meshing_SP.png" width="1158" height="287">
+
+<p>NOTE: the meshing size is adapted if a section can't be divided by an integer number of elements. The new meshing size is the highest meshing size
+lower than the provided size allowing to have an integer number of elements in each section.</p>
+
+<h3>2. Sleeper modelization</h3>
+<p>In Abaqus, the contact pipe/sleeper is modelled between the nodes contituting the pipe (i.e. the centerline) and the sleeper cylinder surface. In order to reach
+the correct pipeline height with regard to the seabed, the sleeper height is artificially changed and is then higher than reality. The sleeper modelization and its 
+movement compared with reality are depicted in the schema below.</p>
+
+<img src="img/sleeper_model.png" width="1047" height="611">
+
+<h3>3. Distance far from Buckle</h3>
+<p>This parameter is an option that is activated only if greater than 0. It is used to avoid the pipe to take a snake shape on both sides of the line. The behavior is depicted
+in the image below. This is an unexpected behavior that should usually be avoided, as non-physical, in order to maximize the feed-in in the buckle. To do so, the user specifies
+ a distance from the buckle on which the lateral displacement of the nodes comprised between this distance and the end of the line, in both directions (i.e. on the right and
+ on the left of the buckle), are fixed. This distance is usually taken quite far from the buckle to avoid any interaction with it in term of shape or loads.</p>
+
+<img src="img/Far from buckle.png" width="1040" height="641">
+
+<h3>4. Limitations</h3>
+<p>
+  <ul>
+    <li>The number of section is not parameterized. Once the Model is generated, the user cannot easily change the number of sections;</li>
+	<li>Same for subroutine parameters. Once the Model is generated, the user cannot easily change the number of curves;</li>
+    <li>The loads are constant along the pipeline;</li>
+	<li>The installation steps are imposed.</li>
+  </ul>
+</p>
+
+<h1>V. Installation steps</h1>
+<p>
+  The user can choose the installation steps corresponding to one of the two available methodologies : RCM or Rogue Buckle and sleepers.
+  each step is represented in a graph below :
+</p>
+<h3>1. U-RCM</h3>
+<p>
+
+  <ul>
+    <img src="img/URCM_1.png" width="1228">
+    <img src="img/URCM_2.png" width="1200">
+    <img src="img/URCM_3.png" width="1229">
+    <img src="img/URCM_4.png" width="1229">
+    <img src="img/URCM_5.png" width="1229">
+    <img src="img/URCM_6.png" width="1228">
+	<img src="img/URCM_7.png" width="1228">
+  </ul>
+
+<h3>2. U-RCM + winch</h3>
+
+  <ul>
+    <img src="img/URCM_1.png" width="1228">
+    <img src="img/URCM_2.png" width="1200">
+    <img src="img/URCM_3.png" width="1229">
+    <img src="img/URCM_4.png" width="1229">
+    <img src="img/URCM_5.png" width="1229">
+    <img src="img/URCM_6.png" width="1228">
+	<img src="img/URCMW_7.png" width="1100">
+	<img src="img/URCMW_8.png" width="1100">
+  </ul>
+  
+<h3>3. Rogue Buckle</h3>
+
+  <ul>
+    <img src="img/RB_1.png" width="1229">
+    <img src="img/RB_2.png" width="1229">
+    <img src="img/RB_3.png" width="1229">
+    <img src="img/RB_4.png" width="1229">
+  </ul>
+
+<h3>4. Subsea winch</h3>
+
+  <ul>
+    <img src="img/SSW_1.png" width="1229">
+    <img src="img/SSW_2.png" width="1229">
+    <img src="img/SSW_3.png" width="1100">
+    <img src="img/SSW_4.png" width="1150">
+  </ul>
+  
+<h3>5. Sleeper</h3>
+
+  <ul>
+    <img src="img/RB_1.PNG" width="1228">
+    <img src="img/RB_2.PNG" width="1229">
+    <img src="img/SL_3.PNG" width="1229">
+    <img src="img/SL_4.PNG" width="1229">
+    <img src="img/SL_5.PNG" width="1229">
+  </ul>
+
+<h3>6. W-RCM</h3>
+
+  <ul>
+    <img src="img/WRCM_1.png" width="1228">
+    <img src="img/WRCM_2.png" width="1229">
+    <img src="img/WRCM_3.png" width="1100">
+    <img src="img/WRCM_4.png" width="1229">
+    <img src="img/WRCM_5.png" width="1229">
+    <img src="img/WRCM_6.png" width="1228">
+	<img src="img/WRCM_7.png" width="1228">
+	<img src="img/WRCM_8.png" width="1228">
+  </ul>
+
+<h3>7. W-RCM + Winch</h3>
+
+  <ul>
+    <img src="img/WRCM_1.png" width="1228">
+    <img src="img/WRCM_2.png" width="1229">
+    <img src="img/WRCM_3.png" width="1100">
+    <img src="img/WRCM_4.png" width="1229">
+    <img src="img/WRCM_5.png" width="1229">
+    <img src="img/WRCM_6.png" width="1228">
+	<img src="img/WRCM_7.png" width="1228">
+	<img src="img/WRCM_8.png" width="1228">
+	<img src="img/WRCM_9.png" width="1100">
+	<img src="img/WRCM_10.png" width="1100">
+  </ul>
+  
+</p>
+
+<h1>VI. Changelog</h1>
+<p>
+	Here below are summarized all the changes each block version has introduced since the original release.
+</p>
+
+<h3>Version 4</h3>
+<p>
+	<u>Release Date:</u> November 30, 2021
+</p>
+<p class="app__red_alert">
+  Due to the major changes introduced in this version 4, backward compatibility could not be ensured. As a result, 
+  users are asked not to use the "Update" button in the "Workflow Library" nor the "Import" button in the block with 
+  <i>*arena</i> files from older versions (<4).
+</p>
+<p>
+	<u>Improvements:</u>
+	<ul>
+		<li>Added 4 new initiation methodologies: U-RCM + winch, W-RCM, W-RCM + winch and subsea winch.</li>
+		<li>Added a panel to change the frequency of results for each step.</li>
+	</ul>
+</p>
+<p>
+	<u>Bug Corrections:</u>
+	<ul>
+		<li>Corrected the U-RCM rotation convention.</li>
+		<li>Corrected the meshing: there was a slight discrepancy in the final number of nodes.</li>
+		<li>Corrected the pressure file exported. It was previously missing some data at the final elements.</li>
+		<li>Corrected the external pressure calculation: 1 Pa was considered for the atmosphere pressure instead of 1 Bar.</li>
+	</ul>
+</p>
+
+<h3>Version 3</h3>
+<p>
+	<u>Release Date:</u> October 05, 2021
+</p>
+<p>
+	<u>Bug Corrections:</u>
+	<ul>
+		<li>Modified CNORMF and CSHEARF outputs. They are now divided into 3 components each when requested.</li>
+		<li>Corrected the installation steps of the rogue buckle methodology. Buckle was not triggered properly.</li>
+	</ul>
+</p>
+
+<h3>Version 2</h3>
+<p>
+	<u>Release Date:</u> September 28, 2021
+</p>
+<p>
+	<u>Improvements:</u>
+	<ul>
+		<li>Changed the default value of the <i>Pipe Circumferential Discretization</i> from 1 to 8</li>
+	</ul>
+</p>
+<p>
+	<u>Bug Corrections:</u>
+	<ul>
+		<li>Removed some incorrect additional outputs associated to RCM method</li>
+    <li>Corrected a bug where tabular plastic curves were not exporting the right columns</li>
+    <li>Corrected the values of pressure exported in the pressure file</li>
+    <li>Corrected the order of parameters of the subroutine OneFric v3.12</li>
+    <li>Corrected a bug where the default stabilization parameters were not used properly</li>
+    <li>Corrected a typo in the boundaries of step 6 of the RCM method</li>
+    <li>Corrected a bug preventing from importing a configuration file (<i>.arena</i>) if the <i>Methodology</i> is not the same between 
+      the GUI and the imported configuration</li>
+	</ul>
+</p>
+
+</div>
+</body>
